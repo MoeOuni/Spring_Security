@@ -20,13 +20,10 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ouni.users.entities.User;
 
-public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
-
+public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 	private AuthenticationManager authenticationManager;
 
-	
-	
 	public JWTAuthenticationFilter(AuthenticationManager authenticationManager) {
 		super();
 		this.authenticationManager = authenticationManager;
@@ -35,42 +32,41 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
-	
-		User user =null;
+
+		User user = null;
 		try {
-			 user = new ObjectMapper().readValue(request.getInputStream(), User.class);
+			user = new ObjectMapper().readValue(request.getInputStream(), User.class);
 		} catch (JsonParseException e) {
 			e.printStackTrace();
 		} catch (JsonMappingException e) {
 			e.printStackTrace();
-		} catch (IOException e) {			
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
-			
-		return authenticationManager.
-				authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(),user.getPassword()));
+
+		return authenticationManager
+				.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 	}
 
 	@Override
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
-		
-		org.springframework.security.core.userdetails.User springUser = 
-			(org.springframework.security.core.userdetails.User) authResult.getPrincipal();
-		
+
+		org.springframework.security.core.userdetails.User springUser = (org.springframework.security.core.userdetails.User) authResult
+				.getPrincipal();
+
 		List<String> roles = new ArrayList<>();
-		springUser.getAuthorities().forEach(au-> {
+		springUser.getAuthorities().forEach(au -> {
 			roles.add(au.getAuthority());
 		});
-		
-		String jwt = JWT.create().
-				  withSubject(springUser.getUsername()).
-		withArrayClaim("roles", roles.toArray(new String[roles.size()])).
-		withExpiresAt(new Date(System.currentTimeMillis()+SecParams.EXP_TIME)). 
-		sign(Algorithm.HMAC256(SecParams.SECRET));
-		
-		response.addHeader("Authorization", jwt);			  
-		
+
+		String jwt = JWT.create().withSubject(springUser.getUsername())
+				.withArrayClaim("roles", roles.toArray(new String[roles.size()]))
+				.withExpiresAt(new Date(System.currentTimeMillis() + SecParams.EXP_TIME))
+				.sign(Algorithm.HMAC256(SecParams.SECRET));
+
+		response.addHeader("Authorization", jwt);
+
 	}
-	
+
 }
